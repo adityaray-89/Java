@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BlueJ Lab Programs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: one program at a time under a sticky strip of numbered chips.
+   Phone stacks run (values + terminal), code, notes. Desktop puts code on the left, run + notes on the right. */
+:root {
+  --bg: #EDF1F6;
+  --surface: #FFFFFF;
+  --surface-2: #F3F6FA;
+  --ink: #12203A;
+  --ink-2: #4A5876;
+  --line: #D3DBE7;
+  --accent: #1B5EC9;
+  --accent-ink: #FFFFFF;
+  --box: #E6D3A3;
+  --box-line: #A58B4E;
+  --box-ink: #3B2F12;
+  --term-bg: #FFFFFF;
+  --term-ink: #12203A;
+  --code-bg: #FAFBFD;
+  --ok: #16803C;
+  --err: #C62828;
+  --err-soft: #FDECEC;
+  --kw: #B1156D;
+  --str: #1A7F4B;
+  --num: #B45309;
+  --com: #5E6D85;
+  --ty: #1B5EC9;
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0B1220; --surface: #121B2D; --surface-2: #17223A; --ink: #E7EDF8; --ink-2: #A5B2CB; --line: #26334F;
+    --accent: #6EA3FF; --accent-ink: #0B1220; --box: #4A4128; --box-line: #9A8548; --box-ink: #F3E7C1;
+    --term-bg: #070C16; --term-ink: #E7EDF8; --code-bg: #0F1726; --ok: #5FD38A; --err: #FF8A80; --err-soft: #3A1D22;
+    --kw: #FF8BCB; --str: #7EE0A8; --num: #FFB86B; --com: #8A9BB5; --ty: #8DB8FF;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0B1220; --surface: #121B2D; --surface-2: #17223A; --ink: #E7EDF8; --ink-2: #A5B2CB; --line: #26334F;
+  --accent: #6EA3FF; --accent-ink: #0B1220; --box: #4A4128; --box-line: #9A8548; --box-ink: #F3E7C1;
+  --term-bg: #070C16; --term-ink: #E7EDF8; --code-bg: #0F1726; --ok: #5FD38A; --err: #FF8A80; --err-soft: #3A1D22;
+  --kw: #FF8BCB; --str: #7EE0A8; --num: #FFB86B; --com: #8A9BB5; --ty: #8DB8FF;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 16px/1.55 var(--font-body);
+  -webkit-text-size-adjust: 100%;
+}
+body::before {
+  content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px);
+  background: var(--bg); z-index: 10;
+}
+h1, h2, h3 { font-family: var(--font-display); margin: 0; text-wrap: balance; color: var(--ink); }
+a:focus-visible, button:focus-visible, input:focus-visible, .code:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+
+.in {
+  width: 100%; max-width: 1320px; margin-left: auto; margin-right: auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.eyebrow {
+  margin: 0; font: 600 12px/1.4 var(--font-body); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2);
+}
+.top { padding-block: 22px 14px; }
+h1 { font-size: clamp(1.75rem, 5.5vw, 2.5rem); line-height: 1.1; letter-spacing: -.01em; margin-top: 6px; font-weight: 700; }
+.lede { margin: 8px 0 0; color: var(--ink-2); max-width: 60ch; }
+
+/* Program strip */
+.strip {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 9;
+  background: var(--bg); border-bottom: 1px solid var(--line);
+}
+.chips { display: flex; gap: 8px; overflow-x: auto; padding-block: 10px; position: relative; scrollbar-width: thin; }
+.chip {
+  flex: 0 0 auto; min-width: 44px; height: 44px; display: grid; place-items: center;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 8px;
+  font: 700 15px var(--font-display); text-decoration: none; font-variant-numeric: tabular-nums;
+}
+.chip[aria-current="page"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.sep { flex: 0 0 1px; background: var(--line); margin: 4px 4px; }
+
+/* Program header */
+#view { padding-block: 22px 8px; }
+.phead h2 { font-size: clamp(1.4rem, 4.6vw, 2rem); line-height: 1.15; margin-top: 4px; font-weight: 700; }
+.task { margin: 10px 0 0; font-size: 17px; max-width: 64ch; }
+.lbl {
+  display: inline-block; margin-right: 8px; font: 600 11px/1 var(--font-body); letter-spacing: .08em;
+  text-transform: uppercase; color: var(--accent);
+}
+.tags { list-style: none; padding: 0; margin: 12px 0 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.tags li {
+  font: 500 12px var(--font-mono); padding: 3px 8px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--ink-2); border-radius: 4px;
+}
+
+/* Grid */
+.grid { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); margin-top: 18px; align-items: start; }
+.run { display: grid; gap: 16px; min-width: 0; }
+@media (min-width: 860px) {
+  .grid { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); grid-template-areas: "code run" "code notes"; }
+  .codecol { grid-area: code; }
+  .run { grid-area: run; }
+  .notes { grid-area: notes; }
+}
+
+/* Panels and windows */
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px; min-width: 0; }
+.panel h3 { font-size: 15px; font-weight: 700; }
+.hint { margin: 4px 0 12px; color: var(--ink-2); font-size: 14px; }
+.win { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; min-width: 0; }
+.win-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 7px 8px 7px 12px; background: var(--surface-2); border-bottom: 1px solid var(--line); min-height: 50px;
+}
+.win-title { font: 500 13px var(--font-mono); color: var(--ink-2); }
+.btn {
+  min-height: 38px; padding: 0 14px; border-radius: 6px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--ink); font: 600 13px var(--font-body); cursor: pointer;
+}
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+
+/* Fields */
+.fields { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+.field { min-width: 0; }
+.field.wide { grid-column: 1 / -1; }
+.field label { display: block; margin-bottom: 4px; font: 500 12.5px var(--font-body); color: var(--ink-2); }
+.field input {
+  width: 100%; min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 6px;
+  background: var(--surface-2); color: var(--ink); font: 500 16px var(--font-mono);
+}
+.field input:focus { border-color: var(--accent); }
+
+/* Code */
+.classbox {
+  font: 500 13px var(--font-mono); color: var(--box-ink); background: var(--box);
+  border: 1px solid var(--box-line); padding: 3px 10px; border-radius: 3px;
+}
+.classbox.stale {
+  background-image: repeating-linear-gradient(135deg, transparent 0 5px, color-mix(in srgb, var(--box-line) 55%, transparent) 5px 7px);
+}
+.ext { font: 400 13px var(--font-mono); color: var(--ink-2); margin-left: 2px; }
+.code {
+  margin: 0; padding: 14px 16px; background: var(--code-bg); overflow-x: auto;
+  font: 400 13.5px/1.65 var(--font-mono); color: var(--ink); tab-size: 4; white-space: pre;
+}
+.code code { font: inherit; }
+.code .k { color: var(--kw); font-weight: 500; }
+.code .s { color: var(--str); }
+.code .n { color: var(--num); }
+.code .c { color: var(--com); font-style: italic; }
+.code .t { color: var(--ty); }
+.flash { padding: 6px 12px; font-size: 13px; color: var(--ink-2); border-top: 1px solid var(--line); }
+.flash:empty { display: none; }
+.status {
+  display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-top: 1px solid var(--line);
+  font: 500 13px/1.4 var(--font-body); color: var(--ok);
+}
+.status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex: none; }
+.status.bad { color: var(--err); background: var(--err-soft); }
+
+/* Terminal */
+.term {
+  background: var(--term-bg); color: var(--term-ink); font: 400 14px/1.6 var(--font-mono);
+  padding: 12px 14px; min-height: 112px; overflow-x: auto;
+}
+.tl { white-space: pre-wrap; overflow-wrap: anywhere; min-height: 1.6em; }
+.tl .in { color: var(--accent); font-weight: 500; }
+.tl .err { color: var(--err); }
+.tl .mute { color: var(--ink-2); font-style: italic; }
+.term.replay .tl { animation: line .28s ease both; animation-delay: calc(var(--i) * 110ms); }
+@keyframes line { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .term.replay .tl { animation: none; } }
+
+/* Notes */
+.notes ol { margin: 10px 0 0; padding-left: 20px; display: grid; gap: 8px; }
+.notes li::marker { color: var(--ink-2); font-weight: 600; }
+.notes code {
+  font: 500 .9em var(--font-mono); background: var(--surface-2); border: 1px solid var(--line);
+  padding: 1px 5px; border-radius: 3px;
+}
+
+/* Pager and footer */
+.pager { display: flex; gap: 12px; margin-top: 20px; }
+.pager > * { flex: 1 1 0; min-width: 0; }
+.pbtn {
+  display: flex; flex-direction: column; gap: 2px; padding: 10px 14px; border: 1px solid var(--line);
+  background: var(--surface); border-radius: 6px; text-decoration: none; color: var(--ink); font-weight: 500;
+}
+.pbtn small { color: var(--ink-2); font-weight: 600; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+.pbtn.next { text-align: right; }
+.foot { padding-block: 12px 36px; color: var(--ink-2); font-size: 13px; }
+.foot p { margin: 0; max-width: 70ch; }
+
+/* Desktop: a sidebar of all programs replaces the chip strip */
+.shell { display: block; }
+.side { display: none; }
+#view { min-width: 0; }
+.side .eyebrow { margin: 18px 0 6px; padding-left: 10px; }
+.side .eyebrow:first-child { margin-top: 0; }
+.side-link {
+  display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 6px;
+  color: var(--ink); text-decoration: none; font-size: 14.5px; line-height: 1.3;
+}
+.side-link .num {
+  flex: none; width: 26px; height: 26px; display: grid; place-items: center; border: 1px solid var(--line);
+  background: var(--surface); border-radius: 5px; font: 700 13px var(--font-display); font-variant-numeric: tabular-nums;
+}
+.side-link[aria-current="page"] { font-weight: 600; }
+.side-link[aria-current="page"] .num { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.tip { margin: 18px 10px 0; font-size: 12.5px; color: var(--ink-2); }
+@media (hover: hover) {
+  .chip:not([aria-current]):hover, .pbtn:hover, .btn:hover { background: var(--surface-2); }
+  .btn.primary:hover { background: var(--accent); filter: brightness(1.1); }
+  .side-link:hover { background: var(--surface); }
+}
+@media (min-width: 1000px) {
+  .strip { display: none; }
+  .shell { display: grid; grid-template-columns: 252px minmax(0, 1fr); gap: 32px; align-items: start; }
+  .side {
+    display: block; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); margin-top: 22px;
+    max-height: calc(100vh - 32px); overflow-y: auto; padding-bottom: 8px;
+  }
+  .task { font-size: 18px; }
+  .code { font-size: 14.5px; }
+  .term { font-size: 15px; min-height: 140px; }
+  .notes li { font-size: 15.5px; }
+}
+body { margin: 0; }
+</style>
+
+</head>
+<body>
+<header class="top">
+  <div class="in">
+    <p class="eyebrow">Lab Session · Activity Section</p>
+    <h1>BlueJ Lab Programs</h1>
+    <p class="lede">Fourteen Java programs. Pick a number, read the code, change the values and run it in the terminal.</p>
+  </div>
+</header>
+<nav class="strip" aria-label="Programs"><div class="in"><div class="chips" id="chips"></div></div></nav>
+<div class="in shell">
+  <aside class="side" id="side" aria-label="All programs"></aside>
+  <main id="view" tabindex="-1"></main>
+</div>
+<footer class="in foot">
+  <p>The output on this page is worked out in your browser to match what each Java program prints. To run the code for real, type it into a class in BlueJ, compile it and run main.</p>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+  var INT_MIN = -2147483648, INT_MAX = 2147483647;
+  var esc = function (s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  };
+  var jstr = function (s) { return String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"'); };
+  var lit = function (s) { return String(s).trim(); };
+  var par = function (n) { return n < 0 ? '(' + n + ')' : String(n); };
+
+  /* Java compile errors for the editable literals */
+  function bad(t) {
+    return {
+      compile: /^[A-Za-z_]\w*$/.test(t) ? 'cannot find symbol – variable ' + t : 'illegal start of expression'
+    };
+  }
+  function I(raw) {
+    var t = lit(raw);
+    if (t === '' || !/^[+-]?(\d+\.?\d*|\.\d+)$/.test(t)) throw bad(t);
+    if (t.indexOf('.') !== -1) throw { compile: 'incompatible types: possible lossy conversion from double to int' };
+    var n = Number(t);
+    if (n < INT_MIN || n > INT_MAX) throw { compile: 'integer number too large: ' + t.replace(/^[+-]/, '') };
+    return n;
+  }
+  function D(raw) {
+    var t = lit(raw);
+    if (t === '' || !/^[+-]?(\d+\.?\d*|\.\d+)$/.test(t)) throw bad(t);
+    return Number(t);
+  }
+
+  /* Java's double-to-text rules for the common cases */
+  function jd(x) {
+    if (!isFinite(x)) return isNaN(x) ? 'NaN' : (x < 0 ? '-Infinity' : 'Infinity');
+    if (x === 0) return (1 / x < 0) ? '-0.0' : '0.0';
+    var a = Math.abs(x);
+    if (a >= 1e7 || a < 1e-3) {
+      var parts = x.toExponential().split('e');
+      var m = parts[0];
+      if (m.indexOf('.') === -1) m += '.0';
+      return m + 'E' + parseInt(parts[1], 10);
+    }
+    var s = String(x);
+    return s.indexOf('.') === -1 ? s + '.0' : s;
+  }
+
+  /* Terminal builder: a line is a list of {t: out|in|err|mute, s} pieces */
+  function term() {
+    var lines = [], cur = [];
+    return {
+      print: function (s) { cur.push({ t: 'out', s: s }); },
+      println: function (s) { cur.push({ t: 'out', s: s }); lines.push(cur); cur = []; },
+      read: function (s) { cur.push({ t: 'in', s: s }); lines.push(cur); cur = []; },
+      err: function (s) { if (cur.length) { lines.push(cur); cur = []; } lines.push([{ t: 'err', s: s }]); },
+      wait: function () {
+        if (cur.length) { lines.push(cur); cur = []; }
+        lines.push([{ t: 'mute', s: 'Waiting for input… type a value above.' }]);
+      },
+      done: function () { if (cur.length) lines.push(cur); return lines; }
+    };
+  }
+
+  /* Scanner simulation */
+  var MISMATCH = 'Exception in thread "main" java.util.InputMismatchException';
+  function nextInt(T, raw) {
+    var t = lit(raw);
+    if (t === '') { T.wait(); return null; }
+    if (!/^[+-]?\d+$/.test(t)) { T.read(t); T.err(MISMATCH); return null; }
+    var n = Number(t);
+    if (n < INT_MIN || n > INT_MAX) { T.read(t); T.err(MISMATCH + ': For input string: "' + t + '"'); return null; }
+    T.read(t); return n;
+  }
+  function nextDouble(T, raw) {
+    var t = lit(raw);
+    if (t === '') { T.wait(); return null; }
+    if (!/^[+-]?(\d+\.?\d*|\.\d+)$/.test(t)) { T.read(t); T.err(MISMATCH); return null; }
+    T.read(t); return Number(t);
+  }
+  function nextChar(T, raw) {
+    var t = lit(raw).split(/\s+/)[0] || '';
+    if (t === '') { T.wait(); return null; }
+    T.read(t); return t.charAt(0);
+  }
+
+  /* Wrap statements in the usual BlueJ class and main method */
+  function wrap(name, body, imp) {
+    var out = [];
+    if (imp) out.push('import java.util.*;', '');
+    out.push('public class ' + name, '{', '    public static void main(String args[])', '    {');
+    body.forEach(function (l) { out.push(l ? '        ' + l : ''); });
+    out.push('    }', '}');
+    return out.join('\n');
+  }
+
+  var DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  var PARTS = { 1: 'print and calculate', 2: 'input and decisions' };
+  var HINT = {
+    code: 'These values are written inside the code. Change one and the code and the output both update.',
+    input: 'The program asks for these when it runs. Blue text in the terminal is what you type.',
+    text: 'Sample details. Replace them with your own school.'
+  };
+
+  var P = [
+    {
+      id: 1, part: 1, cls: 'Welcome', title: 'Welcome message', mode: 'code', fields: [],
+      task: 'Print “Welcome to the World of Artificial Intelligence”.',
+      tags: ['class', 'main method', 'System.out.println'],
+      code: function () { return wrap('Welcome', ['System.out.println("Welcome to the World of Artificial Intelligence");']); },
+      run: function (v, T) { T.println('Welcome to the World of Artificial Intelligence'); },
+      notes: function () {
+        return [
+          '<code>main</code> is where every Java program starts running.',
+          '<code>System.out.println</code> prints what is inside the brackets and then moves to a new line.',
+          'Text in double quotes is a <code>String</code>. It is printed exactly as written.'
+        ];
+      }
+    },
+    {
+      id: 2, part: 1, cls: 'SchoolDetails', title: 'School details in five lines', mode: 'text',
+      task: 'Print the general details about your school in five lines.',
+      tags: ['println', 'String'],
+      fields: [
+        { key: 's1', label: 'Line 1', kind: 'text', def: 'School: Sunrise Public School', max: 70 },
+        { key: 's2', label: 'Line 2', kind: 'text', def: 'Address: 12 Station Road, Your City', max: 70 },
+        { key: 's3', label: 'Line 3', kind: 'text', def: 'Board: CBSE', max: 70 },
+        { key: 's4', label: 'Line 4', kind: 'text', def: 'Classes: Nursery to XII', max: 70 },
+        { key: 's5', label: 'Line 5', kind: 'text', def: 'Principal: Mrs. A. Sharma', max: 70 }
+      ],
+      code: function (v) {
+        return wrap('SchoolDetails', [1, 2, 3, 4, 5].map(function (i) {
+          return 'System.out.println("' + jstr(v['s' + i]) + '");';
+        }));
+      },
+      run: function (v, T) { [1, 2, 3, 4, 5].forEach(function (i) { T.println(v['s' + i]); }); },
+      notes: function () {
+        return [
+          'Each <code>println</code> prints one line, so five statements make five lines.',
+          'To change a detail, edit the text between the quotes.',
+          '<code>print</code> (without ln) stays on the same line instead of moving to the next.'
+        ];
+      }
+    },
+    {
+      id: 3, part: 1, cls: 'SumOfTwo', title: 'Sum of two numbers', mode: 'code',
+      task: 'Calculate the sum of 2060 and 5999.',
+      tags: ['int', '+ operator', 'String concatenation'],
+      fields: [
+        { key: 'a', label: 'a (int)', kind: 'int', def: '2060' },
+        { key: 'b', label: 'b (int)', kind: 'int', def: '5999' }
+      ],
+      code: function (v) {
+        return wrap('SumOfTwo', ['int a = ' + lit(v.a) + ';', 'int b = ' + lit(v.b) + ';', 'int sum = a + b;', 'System.out.println("Sum = " + sum);']);
+      },
+      run: function (v, T) { var a = I(v.a), b = I(v.b); T.println('Sum = ' + ((a + b) | 0)); },
+      notes: function () {
+        return [
+          '<code>int a</code> and <code>int b</code> store whole numbers.',
+          '<code>a + b</code> adds them and the answer is stored in <code>sum</code>.',
+          'In <code>"Sum = " + sum</code> the <code>+</code> joins the text and the number into one line.'
+        ];
+      }
+    },
+    {
+      id: 4, part: 1, cls: 'Average', title: 'Average of three numbers', mode: 'code',
+      task: 'Find the average of 40, 85 and 115.',
+      tags: ['int', 'double', '/ operator'],
+      fields: [
+        { key: 'a', label: 'a (int)', kind: 'int', def: '40' },
+        { key: 'b', label: 'b (int)', kind: 'int', def: '85' },
+        { key: 'c', label: 'c (int)', kind: 'int', def: '115' }
+      ],
+      code: function (v) {
+        return wrap('Average', [
+          'int a = ' + lit(v.a) + ';', 'int b = ' + lit(v.b) + ';', 'int c = ' + lit(v.c) + ';',
